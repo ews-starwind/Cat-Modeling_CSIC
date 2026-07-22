@@ -1,0 +1,3 @@
+# This file keeps the empty `data/` folder in version control.
+# Place exactly one source .xlsx (the CAPWindModeling SOV export) here before running.
+# Data files themselves (*.xlsx, *.csv, etc.) are git-ignored and never committed.

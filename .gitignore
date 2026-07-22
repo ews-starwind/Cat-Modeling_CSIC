@@ -1,0 +1,50 @@
+# Excel files
+*.xlsx
+*.xls
+*.xlsm
+*.xlsb
+*.xltx
+
+# Parquet files
+*.parquet
+parquet/
+
+# CSV files
+*.csv
+
+# Claude Code
+.claude/
+
+# Editor
+.vscode/
+
+# Markdown files
+*.md
+!README.md
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Nuitka build artifacts
+*.build/
+*.dist/
+*.onefile-build/
+nuitka-crash-report.xml
+nuitka-crash-report.txt
+
+# PyInstaller build artifacts
+build/
+dist/
+
+# Compiled executables / native build output
+*.exe
+*.cmd
+*.dll
+*.pyd
+*.so
+*.bin
+
+# Zipped output bundles
+*.zip
