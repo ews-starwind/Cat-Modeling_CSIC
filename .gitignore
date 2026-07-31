@@ -31,6 +31,7 @@ __pycache__/
 *.build/
 *.dist/
 *.onefile-build/
+*.xml
 nuitka-crash-report.xml
 nuitka-crash-report.txt
 

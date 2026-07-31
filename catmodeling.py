@@ -2,6 +2,7 @@ import python_calamine
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from typing import cast
 import shutil
 from openpyxl.styles import PatternFill
 
@@ -11,9 +12,9 @@ if len(excel_files) != 1:
     raise SystemExit(f"Expected exactly one .xlsx in data/, found: {excel_files}")
 raw_data = excel_files[0]
 
-raw_data_df = pd.read_excel(raw_data)
+raw_data_df = pd.read_excel(raw_data, engine="calamine")
 # raw_data_df.head(10)
-raw_data_df = raw_data_df.drop(columns=["Unnamed: 38"]).copy()
+raw_data_df = raw_data_df.drop(columns=["Unnamed: 38"])
 
 RENAME_COLS = {
     'MCONAME' : 'MCONAME',
@@ -75,29 +76,41 @@ SCENARIOS = [
     ('5pct', 'WS', 2, 0.05)
 ]
 
-modeling = raw_data_df.copy().rename(columns = RENAME_COLS)
+modeling = raw_data_df.rename(columns = RENAME_COLS)
 
-modeling.insert(modeling.columns.get_loc('Named Insured') + 1, '*ACCNTNAME', modeling['Named Insured'].str.replace(',', ''))
-modeling.insert(modeling.columns.get_loc('QUOTEID') + 1, '*ACCNTNUM', modeling['QUOTEID'])
-modeling.insert(modeling.columns.get_loc('BLDGNO') + 1, '*LOCNUM', modeling['BLDGNO'])
-modeling.insert(modeling.columns.get_loc('COUNTY') + 1, '*STREETNAME', modeling['STNAME'])
-modeling.insert(modeling.columns.get_loc('COUNTY') + 2, '*CITY', modeling['CITY'])
-modeling.insert(modeling.columns.get_loc('COUNTY') + 3, '*STATECODE', modeling['STATE'])
-modeling.insert(modeling.columns.get_loc('COUNTY') + 4, '*POSTALCODE', modeling['ZIP5'])
-modeling.insert(modeling.columns.get_loc('COUNTY') + 5, '*COUNTY', modeling['COUNTY'])
-modeling.insert(modeling.columns.get_loc('COUNTY') + 6, '*CNTRYSCHEME', 'ISO2A')
-modeling.insert(modeling.columns.get_loc('COUNTY') + 7, '*CNTRYCODE', 'US')
-modeling.insert(modeling.columns.get_loc('CONSTCL') + 1, '*BLDGSCHEME', 'FIRE')
-modeling.insert(modeling.columns.get_loc('CONSTCL') + 2, '*BLDGCLASS', modeling['CONSTCL'])
-modeling.insert(modeling.columns.get_loc('OCCPCL') + 1, '*OCCSCHEME', 'ATC')
-modeling.insert(modeling.columns.get_loc('OCCPCL') + 2, '*OCCTYPE', modeling['OCCPCL'])
-modeling.insert(modeling.columns.get_loc('NOSTORIES') + 1, '*NUMSTORIES', modeling['NOSTORIES'])
-modeling.insert(modeling.columns.get_loc('YEARBUILT') + 1, '*YEARBUILT', '1/1/' + modeling['YEARBUILT'].astype(str))
-modeling.insert(modeling.columns.get_loc('LOCBLDREPL'), '*CV1VAL', modeling['LOCBLDREPL'])
-modeling.insert(modeling.columns.get_loc('LOCCNTREPL'), '*CV2VAL', modeling['LOCCNTREPL'])
-modeling.insert(modeling.columns.get_loc('SQFEET') + 1, '*FLOORAREA', modeling['SQFEET'])
-modeling.insert(modeling.columns.get_loc('Expiration Date') + 1, '*INCEPTDATE', modeling['Effective Date'])
-modeling.insert(modeling.columns.get_loc('Expiration Date') + 2, '*EXPIREDATE', modeling['Expiration Date'])
+named_insured_loc = cast(int, modeling.columns.get_loc('Named Insured'))
+modeling.insert(named_insured_loc + 1, '*ACCNTNAME', modeling['Named Insured'].str.replace(',', '', regex=False))
+quoteid_loc = cast(int, modeling.columns.get_loc('QUOTEID'))
+modeling.insert(quoteid_loc + 1, '*ACCNTNUM', modeling['QUOTEID'])
+bldgno_loc = cast(int, modeling.columns.get_loc('BLDGNO'))
+modeling.insert(bldgno_loc + 1, '*LOCNUM', modeling['BLDGNO'])
+county_loc = cast(int, modeling.columns.get_loc('COUNTY'))
+modeling.insert(county_loc + 1, '*STREETNAME', modeling['STNAME'].str.replace(',', '', regex=False))
+modeling.insert(county_loc + 2, '*CITY', modeling['CITY'].str.replace(',', '', regex=False))
+modeling.insert(county_loc + 3, '*STATECODE', modeling['STATE'])
+modeling.insert(county_loc + 4, '*POSTALCODE', modeling['ZIP5'])
+modeling.insert(county_loc + 5, '*COUNTY', modeling['COUNTY'].str.replace(',', '', regex=False))
+modeling.insert(county_loc + 6, '*CNTRYSCHEME', 'ISO2A')
+modeling.insert(county_loc + 7, '*CNTRYCODE', 'US')
+constcl_loc = cast(int, modeling.columns.get_loc('CONSTCL'))
+modeling.insert(constcl_loc + 1, '*BLDGSCHEME', 'FIRE')
+modeling.insert(constcl_loc + 2, '*BLDGCLASS', modeling['CONSTCL'])
+occpcl_loc = cast(int, modeling.columns.get_loc('OCCPCL'))
+modeling.insert(occpcl_loc + 1, '*OCCSCHEME', 'ATC')
+modeling.insert(occpcl_loc + 2, '*OCCTYPE', modeling['OCCPCL'])
+nostories_loc = cast(int, modeling.columns.get_loc('NOSTORIES'))
+modeling.insert(nostories_loc + 1, '*NUMSTORIES', modeling['NOSTORIES'])
+yearbuilt_loc = cast(int, modeling.columns.get_loc('YEARBUILT'))
+modeling.insert(yearbuilt_loc + 1, '*YEARBUILT', '1/1/' + modeling['YEARBUILT'].astype('Int64').astype(str).str.replace(',', '', regex=False))
+locbldrepl_loc = cast(int, modeling.columns.get_loc('LOCBLDREPL'))
+modeling.insert(locbldrepl_loc, '*CV1VAL', modeling['LOCBLDREPL'])
+loccntrepl_loc = cast(int, modeling.columns.get_loc('LOCCNTREPL'))
+modeling.insert(loccntrepl_loc, '*CV2VAL', modeling['LOCCNTREPL'])
+sqfeet_loc = cast(int, modeling.columns.get_loc('SQFEET'))
+modeling.insert(sqfeet_loc + 1, '*FLOORAREA', modeling['SQFEET'])
+expiration_loc = cast(int, modeling.columns.get_loc('Expiration Date'))
+modeling.insert(expiration_loc + 1, '*INCEPTDATE', modeling['Effective Date'])
+modeling.insert(expiration_loc + 2, '*EXPIREDATE', modeling['Expiration Date'])
 
 
 acct_temp = (modeling[['*ACCNTNUM','*ACCNTNAME','*INCEPTDATE','*EXPIREDATE','*LOCBLDDEDU']]
@@ -183,4 +196,6 @@ with pd.ExcelWriter(output_path, engine="openpyxl", mode="a") as writer:
 for name, df in [("Account", account_df), ("Location", location_df)]:
     out = df.copy()
     out.columns = [str(c).replace("*", "") for c in out.columns]
+    str_cols = out.select_dtypes(include='object').columns
+    out[str_cols] = out[str_cols].apply(lambda s: s.astype(str).str.replace(',', ''))
     out.to_csv(output_dir / f"{name}.csv", index=False, encoding="utf-8-sig")
