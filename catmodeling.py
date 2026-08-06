@@ -14,7 +14,10 @@ raw_data = excel_files[0]
 
 raw_data_df = pd.read_excel(raw_data, engine="calamine")
 # raw_data_df.head(10)
-raw_data_df = raw_data_df.drop(columns=["Unnamed: 38"])
+# Drop any unnamed columns (blank headers); no-op when there are none
+unnamed_cols = [c for c in raw_data_df.columns if str(c).startswith("Unnamed")]
+if unnamed_cols:
+    raw_data_df = raw_data_df.drop(columns=unnamed_cols)
 
 RENAME_COLS = {
     'MCONAME' : 'MCONAME',
