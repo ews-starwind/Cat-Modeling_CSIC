@@ -108,12 +108,27 @@ modeling.insert(yearbuilt_loc + 1, '*YEARBUILT', '1/1/' + modeling['YEARBUILT'].
 locbldrepl_loc = cast(int, modeling.columns.get_loc('LOCBLDREPL'))
 modeling.insert(locbldrepl_loc, '*CV1VAL', modeling['LOCBLDREPL'])
 loccntrepl_loc = cast(int, modeling.columns.get_loc('LOCCNTREPL'))
-modeling.insert(loccntrepl_loc, '*CV2VAL', modeling['LOCCNTREPL'])
+# Min of the two contents figures, ignoring blanks (fmin skips NaN); 0 only when both are empty.
+modeling.insert(loccntrepl_loc, '*CV2VAL', np.fmin(modeling['LOCCNTREPL'], modeling['COCCNTLIMT']))#.fillna(0))
 sqfeet_loc = cast(int, modeling.columns.get_loc('SQFEET'))
 modeling.insert(sqfeet_loc + 1, '*FLOORAREA', modeling['SQFEET'])
+def parse_dates(s):
+    # Handle columns that arrive as real dates/date-strings, as Excel integer
+    # serials (days since 1899-12-30, accounting for Excel's 1900 leap-year bug),
+    # or as a per-row mix of both.
+    if pd.api.types.is_datetime64_any_dtype(s):
+        result = s
+    else:
+        numeric = pd.to_numeric(s, errors="coerce")
+        is_serial = numeric.notna()
+        result = pd.to_datetime(s.where(~is_serial), errors="coerce")
+        result[is_serial] = pd.to_datetime(numeric[is_serial], unit="D", origin="1899-12-30")
+    # Format as plain yyyy-mm-dd strings (NaT becomes NaN/blank).
+    return result.dt.strftime('%Y-%m-%d')
+
 expiration_loc = cast(int, modeling.columns.get_loc('Expiration Date'))
-modeling.insert(expiration_loc + 1, '*INCEPTDATE', modeling['Effective Date'])
-modeling.insert(expiration_loc + 2, '*EXPIREDATE', modeling['Expiration Date'])
+modeling.insert(expiration_loc + 1, '*INCEPTDATE', parse_dates(modeling['Effective Date']))
+modeling.insert(expiration_loc + 2, '*EXPIREDATE', parse_dates(modeling['Expiration Date']))
 
 
 acct_temp = (modeling[['*ACCNTNUM','*ACCNTNAME','*INCEPTDATE','*EXPIREDATE','*LOCBLDDEDU']]
